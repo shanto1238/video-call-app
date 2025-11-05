@@ -1,0 +1,1131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - ভিডিও কল সার্ভিস💦</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            color: white;
+        }
+        
+        .header {
+            background: rgba(0, 0, 0, 0.2);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .tabs {
+            display: flex;
+            background: rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 18px;
+            text-align: center;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        
+        .tab.active {
+            border-bottom: 3px solid #ff2d55;
+            color: #ff2d55;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .tab:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .tab-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 15px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+        
+        .user, .message-item {
+            padding: 18px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+        
+        .user:hover, .message-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .user-info, .message-info {
+            flex: 1;
+        }
+        
+        .user-name, .message-sender {
+            font-weight: bold;
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+        
+        .user-status, .message-preview {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-active {
+            background-color: #4cd964;
+        }
+        
+        .status-blocked {
+            background-color: #ff3b30;
+        }
+        
+        .status-offline {
+            background-color: #8e8e93;
+        }
+        
+        .user-actions, .message-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .action-button {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .block-button {
+            background-color: #ff3b30;
+            color: white;
+        }
+        
+        .unblock-button {
+            background-color: #4cd964;
+            color: white;
+        }
+        
+        .reply-button, .delete-button {
+            background-color: #ff2d55;
+            color: white;
+        }
+        
+        .view-button {
+            background-color: #007aff;
+            color: white;
+        }
+        
+        .action-button:hover {
+            transform: scale(1.05);
+        }
+        
+        .settings-form {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 15px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 16px;
+        }
+        
+        .form-group input::placeholder, .form-group textarea::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+        
+        .save-button {
+            background: #ff2d55;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+        
+        .save-button:hover {
+            transform: scale(1.02);
+        }
+        
+        .call-notification {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .notification-content {
+            background: white;
+            padding: 25px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 80%;
+            color: #333;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .notification-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .accept-button, .reject-button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        
+        .accept-button {
+            background-color: #4cd964;
+            color: white;
+        }
+        
+        .reject-button {
+            background-color: #ff3b30;
+            color: white;
+        }
+        
+        .accept-button:hover, .reject-button:hover {
+            transform: scale(1.05);
+        }
+        
+        .chat-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: none;
+            flex-direction: column;
+            z-index: 1001;
+        }
+        
+        .chat-header {
+            background: rgba(0, 0, 0, 0.2);
+            color: white;
+            padding: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            backdrop-filter: blur(10px);
+        }
+        
+        .close-button {
+            font-size: 24px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .close-button:hover {
+            transform: scale(1.1);
+        }
+        
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .message {
+            margin-bottom: 15px;
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            position: relative;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .received {
+            align-self: flex-start;
+            background: rgba(255, 255, 255, 0.2);
+            border-top-left-radius: 5px;
+        }
+        
+        .sent {
+            align-self: flex-end;
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            border-top-right-radius: 5px;
+        }
+        
+        .message-time {
+            font-size: 11px;
+            margin-top: 5px;
+            opacity: 0.7;
+            text-align: right;
+        }
+        
+        .message-input-container {
+            display: flex;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        .message-input {
+            flex: 1;
+            padding: 12px 18px;
+            border: none;
+            border-radius: 25px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            font-size: 16px;
+        }
+        
+        .message-input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .send-button {
+            background: #ff2d55;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .send-button:hover {
+            transform: scale(1.1);
+        }
+        
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .ad-image-preview {
+            width: 100%;
+            border-radius: 8px;
+            margin-top: 10px;
+            max-height: 150px;
+            object-fit: cover;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        Admin Panel - ভিডিও কল সার্ভিস💦
+    </div>
+    
+    <div class="tabs">
+        <div class="tab active" data-tab="dashboard">Dashboard</div>
+        <div class="tab" data-tab="users">Users</div>
+        <div class="tab" data-tab="messages">Messages</div>
+        <div class="tab" data-tab="calls">Calls</div>
+        <div class="tab" data-tab="ads">Ads</div>
+        <div class="tab" data-tab="settings">Settings</div>
+    </div>
+    
+    <div class="tab-content active" id="dashboard-tab">
+        <div class="stats-container">
+            <div class="stat-card">
+                <div class="stat-number" id="total-users">0</div>
+                <div class="stat-label">Total Users</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="online-users">0</div>
+                <div class="stat-label">Online Users</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="total-messages">0</div>
+                <div class="stat-label">Total Messages</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="total-calls">0</div>
+                <div class="stat-label">Total Calls</div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="user">
+                <div class="user-info">
+                    <div class="user-name">Recent Activity</div>
+                    <div class="user-status" id="recent-activity">Loading...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="tab-content" id="users-tab">
+        <div class="card" id="users-list">
+            <div class="loading">Loading users...</div>
+        </div>
+    </div>
+    
+    <div class="tab-content" id="messages-tab">
+        <div class="card" id="messages-list">
+            <div class="loading">Loading messages...</div>
+        </div>
+    </div>
+    
+    <div class="tab-content" id="calls-tab">
+        <div class="card" id="calls-list">
+            <div class="loading">Loading calls...</div>
+        </div>
+    </div>
+    
+    <div class="tab-content" id="ads-tab">
+        <div class="settings-form">
+            <div class="form-group">
+                <label for="ad-title">Ad Title</label>
+                <input type="text" id="ad-title" placeholder="Enter ad title">
+            </div>
+            
+            <div class="form-group">
+                <label for="ad-content">Ad Content</label>
+                <textarea id="ad-content" rows="3" placeholder="Enter ad content"></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="ad-image">Ad Image URL (Optional)</label>
+                <input type="text" id="ad-image" placeholder="Enter image URL">
+            </div>
+            
+            <div class="form-group">
+                <label for="ad-order">Display Order</label>
+                <select id="ad-order">
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                </select>
+            </div>
+            
+            <button class="save-button" id="save-ad">Save Ad</button>
+        </div>
+        
+        <h3 style="margin: 20px 0 10px;">Active Ads</h3>
+        <div class="card" id="active-ads">
+            <div class="loading">Loading ads...</div>
+        </div>
+    </div>
+    
+    <div class="tab-content" id="settings-tab">
+        <div class="settings-form">
+            <div class="form-group">
+                <label for="service-name">Service Name</label>
+                <input type="text" id="service-name" placeholder="Enter service name">
+            </div>
+            
+            <div class="form-group">
+                <label for="service-description">Service Description</label>
+                <textarea id="service-description" rows="3" placeholder="Enter service description"></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="contact-image">Contact Image URL</label>
+                <input type="text" id="contact-image" placeholder="Enter contact image URL">
+            </div>
+            
+            <div class="form-group">
+                <label for="demo-video">Demo Video URL</label>
+                <input type="text" id="demo-video" placeholder="Enter demo video URL">
+            </div>
+            
+            <button class="save-button" id="save-settings">Save Settings</button>
+        </div>
+    </div>
+    
+    <div class="call-notification" id="call-notification">
+        <div class="notification-content">
+            <h3>Incoming Video Call</h3>
+            <p id="caller-info">A user is calling you</p>
+            <div class="notification-buttons">
+                <button class="accept-button" id="accept-call">Accept</button>
+                <button class="reject-button" id="reject-call">Reject</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="chat-modal" id="chat-modal">
+        <div class="chat-header">
+            <div class="contact-name" id="chat-user-name">User Name</div>
+            <div class="close-button" id="close-chat">✕</div>
+        </div>
+        
+        <div class="chat-messages" id="admin-chat-messages">
+            <div class="loading">Loading messages...</div>
+        </div>
+        
+        <div class="message-input-container">
+            <input type="text" class="message-input" id="admin-message-input" placeholder="Type a message...">
+            <button class="send-button" id="admin-send-button">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M22 2L11 13" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Firebase configuration - আপনার নিজের config ব্যবহার করুন
+        const firebaseConfig = {
+    apiKey: "AIzaSyBNSpf0ZyFMpX-JQ5gOE8t9wLod3rzdSJE",
+    authDomain: "video-call-service-e072e.firebaseapp.com",
+    projectId: "video-call-service-e072e",
+    storageBucket: "video-call-service-e072e.firebasestorage.app",
+    messagingSenderId: "880044601351",
+    appId: "1:880044601351:web:4918aa95d2e5ef695f3aa2"
+};
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+        
+        // DOM elements
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+        const saveAdButton = document.getElementById('save-ad');
+        const saveSettingsButton = document.getElementById('save-settings');
+        const callNotification = document.getElementById('call-notification');
+        const acceptCallButton = document.getElementById('accept-call');
+        const rejectCallButton = document.getElementById('reject-call');
+        const chatModal = document.getElementById('chat-modal');
+        const closeChatButton = document.getElementById('close-chat');
+        const adminChatMessages = document.getElementById('admin-chat-messages');
+        const adminMessageInput = document.getElementById('admin-message-input');
+        const adminSendButton = document.getElementById('admin-send-button');
+        const chatUserName = document.getElementById('chat-user-name');
+        const callerInfo = document.getElementById('caller-info');
+        
+        // State variables
+        let currentChatUser = null;
+        let unsubscribeCallListener = null;
+        let currentCallId = null;
+
+        // Admin Authentication
+        auth.signInAnonymously()
+            .then((userCredential) => {
+                console.log('Admin signed in successfully');
+                loadDashboard();
+                loadUsers();
+                loadMessages();
+                loadCalls();
+                loadAds();
+                loadSettings();
+                setupCallListener();
+            })
+            .catch((error) => {
+                console.error('Admin authentication error:', error);
+                alert('Admin authentication failed. Please refresh the page.');
+            });
+
+        // Event listeners
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const tabId = tab.getAttribute('data-tab');
+                
+                // Remove active class from all tabs and contents
+                tabs.forEach(t => t.classList.remove('active'));
+                tabContents.forEach(c => c.classList.remove('active'));
+                
+                // Add active class to clicked tab and corresponding content
+                tab.classList.add('active');
+                document.getElementById(`${tabId}-tab`).classList.add('active');
+            });
+        });
+        
+        saveAdButton.addEventListener('click', saveAd);
+        saveSettingsButton.addEventListener('click', saveSettings);
+        acceptCallButton.addEventListener('click', acceptCall);
+        rejectCallButton.addEventListener('click', rejectCall);
+        closeChatButton.addEventListener('click', closeChat);
+        adminSendButton.addEventListener('click', sendAdminMessage);
+        adminMessageInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendAdminMessage();
+            }
+        });
+
+        // Dashboard Functions
+        function loadDashboard() {
+            // Load total users
+            db.collection('users').get().then((snapshot) => {
+                document.getElementById('total-users').textContent = snapshot.size;
+                
+                const onlineUsers = snapshot.docs.filter(doc => 
+                    doc.data().status === 'online'
+                ).length;
+                document.getElementById('online-users').textContent = onlineUsers;
+            });
+            
+            // Load total messages
+            db.collection('messages').get().then((snapshot) => {
+                document.getElementById('total-messages').textContent = snapshot.size;
+            });
+            
+            // Load total calls
+            db.collection('calls').get().then((snapshot) => {
+                document.getElementById('total-calls').textContent = snapshot.size;
+            });
+            
+            // Load recent activity
+            db.collection('calls')
+                .orderBy('timestamp', 'desc')
+                .limit(5)
+                .get()
+                .then((snapshot) => {
+                    const activities = snapshot.docs.map(doc => {
+                        const data = doc.data();
+                        return `${data.userName} made a call (${data.status})`;
+                    });
+                    
+                    document.getElementById('recent-activity').textContent = 
+                        activities.length > 0 ? activities.join(', ') : 'No recent activity';
+                });
+        }
+
+        // Users Management
+        function loadUsers() {
+            const usersList = document.getElementById('users-list');
+            
+            db.collection('users')
+                .orderBy('createdAt', 'desc')
+                .onSnapshot((querySnapshot) => {
+                    usersList.innerHTML = '';
+                    
+                    if (querySnapshot.empty) {
+                        usersList.innerHTML = '<div class="empty-state">No users found</div>';
+                        return;
+                    }
+                    
+                    querySnapshot.forEach((doc) => {
+                        const user = doc.data();
+                        const userDiv = document.createElement('div');
+                        userDiv.classList.add('user');
+                        userDiv.innerHTML = `
+                            <div class="user-info">
+                                <div class="user-name">${user.name}</div>
+                                <div class="user-status">
+                                    <div class="status-indicator ${user.status === 'online' ? 'status-active' : user.isBlocked ? 'status-blocked' : 'status-offline'}"></div>
+                                    <span>${user.isBlocked ? 'Blocked' : user.status} - Last seen: ${user.lastSeen ? new Date(user.lastSeen.toDate()).toLocaleString() : 'Never'}</span>
+                                </div>
+                            </div>
+                            <div class="user-actions">
+                                <button class="action-button view-button" data-user-id="${doc.id}">
+                                    View Messages
+                                </button>
+                                <button class="action-button ${user.isBlocked ? 'unblock-button' : 'block-button'}" data-user-id="${doc.id}">
+                                    ${user.isBlocked ? 'Unblock' : 'Block'}
+                                </button>
+                            </div>
+                        `;
+                        usersList.appendChild(userDiv);
+                    });
+                    
+                    // Add event listeners to buttons
+                    document.querySelectorAll('.view-button').forEach(button => {
+                        button.addEventListener('click', function() {
+                            const userId = this.getAttribute('data-user-id');
+                            viewUserMessages(userId);
+                        });
+                    });
+                    
+                    document.querySelectorAll('.block-button, .unblock-button').forEach(button => {
+                        button.addEventListener('click', function() {
+                            const userId = this.getAttribute('data-user-id');
+                            const isCurrentlyBlocked = this.classList.contains('unblock-button');
+                            toggleUserBlock(userId, !isCurrentlyBlocked);
+                        });
+                    });
+                });
+        }
+
+        function toggleUserBlock(userId, block) {
+            db.collection('users').doc(userId).update({
+                isBlocked: block,
+                status: block ? 'blocked' : 'offline'
+            }).then(() => {
+                alert(`User ${block ? 'blocked' : 'unblocked'} successfully`);
+                loadUsers();
+            }).catch((error) => {
+                console.error('Error updating user:', error);
+                alert('Error updating user');
+            });
+        }
+
+        function viewUserMessages(userId) {
+            db.collection('users').doc(userId).get().then((doc) => {
+                if (doc.exists) {
+                    const user = doc.data();
+                    currentChatUser = { id: userId, name: user.name };
+                    chatUserName.textContent = user.name;
+                    chatModal.style.display = 'flex';
+                    loadUserMessages(userId);
+                }
+            });
+        }
+
+        // Messages Management
+        function loadMessages() {
+            const messagesList = document.getElementById('messages-list');
+            
+            db.collection('messages')
+                .orderBy('timestamp', 'desc')
+                .limit(50)
+                .onSnapshot((querySnapshot) => {
+                    messagesList.innerHTML = '';
+                    
+                    if (querySnapshot.empty) {
+                        messagesList.innerHTML = '<div class="empty-state">No messages found</div>';
+                        return;
+                    }
+                    
+                    querySnapshot.forEach((doc) => {
+                        const message = doc.data();
+                        const messageDiv = document.createElement('div');
+                        messageDiv.classList.add('message-item');
+                        messageDiv.innerHTML = `
+                            <div class="message-info">
+                                <div class="message-sender">${message.userName} (${message.userId})</div>
+                                <div class="message-preview">${message.message}</div>
+                                <div class="user-status">
+                                    <span>${message.timestamp ? new Date(message.timestamp.toDate()).toLocaleString() : 'Unknown time'} - ${message.type}</span>
+                                </div>
+                            </div>
+                            <div class="message-actions">
+                                <button class="action-button reply-button" data-user-id="${message.userId}">
+                                    Reply
+                                </button>
+                            </div>
+                        `;
+                        messagesList.appendChild(messageDiv);
+                    });
+                    
+                    // Add event listeners to reply buttons
+                    document.querySelectorAll('.reply-button').forEach(button => {
+                        button.addEventListener('click', function() {
+                            const userId = this.getAttribute('data-user-id');
+                            viewUserMessages(userId);
+                        });
+                    });
+                });
+        }
+
+        function loadUserMessages(userId) {
+            adminChatMessages.innerHTML = '<div class="loading">Loading messages...</div>';
+            
+            db.collection('messages')
+                .where('userId', '==', userId)
+                .orderBy('timestamp', 'asc')
+                .onSnapshot((querySnapshot) => {
+                    adminChatMessages.innerHTML = '';
+                    
+                    if (querySnapshot.empty) {
+                        adminChatMessages.innerHTML = '<div class="empty-state">No messages yet</div>';
+                        return;
+                    }
+                    
+                    querySnapshot.forEach((doc) => {
+                        const message = doc.data();
+                        addAdminMessage(message.message, message.type, message.timestamp);
+                    });
+                });
+        }
+
+        function sendAdminMessage() {
+            const message = adminMessageInput.value.trim();
+            if (message && currentChatUser) {
+                // Add message to Firebase
+                db.collection('messages').add({
+                    userId: currentChatUser.id,
+                    userName: 'Admin',
+                    message: message,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    isRead: false,
+                    type: 'received'
+                }).then(() => {
+                    adminMessageInput.value = '';
+                }).catch((error) => {
+                    console.error('Error sending message:', error);
+                    alert('Error sending message');
+                });
+            }
+        }
+
+        function addAdminMessage(text, type, timestamp) {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message', type);
+            
+            const time = timestamp ? 
+                new Date(timestamp.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) :
+                new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            
+            messageDiv.innerHTML = `
+                <div>${text}</div>
+                <div class="message-time">${time}</div>
+            `;
+            
+            adminChatMessages.appendChild(messageDiv);
+            adminChatMessages.scrollTop = adminChatMessages.scrollHeight;
+        }
+
+        // Calls Management
+        function loadCalls() {
+            const callsList = document.getElementById('calls-list');
+            
+            db.collection('calls')
+                .orderBy('timestamp', 'desc')
+                .limit(50)
+                .onSnapshot((querySnapshot) => {
+                    callsList.innerHTML = '';
+                    
+                    if (querySnapshot.empty) {
+                        callsList.innerHTML = '<div class="empty-state">No calls found</div>';
+                        return;
+                    }
+                    
+                    querySnapshot.forEach((doc) => {
+                        const call = doc.data();
+                        const callDiv = document.createElement('div');
+                        callDiv.classList.add('user');
+                        callDiv.innerHTML = `
+                            <div class="user-info">
+                                <div class="user-name">${call.userName}</div>
+                                <div class="user-status">
+                                    <span>Status: ${call.status} - Duration: ${call.duration || 0}s - Time: ${call.timestamp ? new Date(call.timestamp.toDate()).toLocaleString() : 'Unknown'}</span>
+                                </div>
+                            </div>
+                            <div class="user-actions">
+                                <span class="action-button ${call.status === 'requested' ? 'view-button' : call.status === 'accepted' ? 'unblock-button' : 'block-button'}" style="cursor: default;">
+                                    ${call.status.toUpperCase()}
+                                </span>
+                            </div>
+                        `;
+                        callsList.appendChild(callDiv);
+                    });
+                });
+        }
+
+        function setupCallListener() {
+            unsubscribeCallListener = db.collection('calls')
+                .where('status', '==', 'requested')
+                .onSnapshot((querySnapshot) => {
+                    querySnapshot.forEach((doc) => {
+                        const call = doc.data();
+                        showCallNotification(call, doc.id);
+                    });
+                });
+        }
+
+        function showCallNotification(call, callId) {
+            currentCallId = callId;
+            callerInfo.textContent = `${call.userName} is calling you`;
+            callNotification.style.display = 'flex';
+        }
+
+        function acceptCall() {
+            if (currentCallId) {
+                db.collection('calls').doc(currentCallId).update({
+                    status: 'accepted'
+                }).then(() => {
+                    callNotification.style.display = 'none';
+                    alert('Call accepted - This is a demo. In real app, you would connect the video call.');
+                    currentCallId = null;
+                });
+            }
+        }
+
+        function rejectCall() {
+            if (currentCallId) {
+                db.collection('calls').doc(currentCallId).update({
+                    status: 'rejected'
+                }).then(() => {
+                    callNotification.style.display = 'none';
+                    currentCallId = null;
+                });
+            }
+        }
+
+        // Ads Management
+        function loadAds() {
+            const activeAds = document.getElementById('active-ads');
+            
+            db.collection('ads')
+                .where('isActive', '==', true)
+                .orderBy('order', 'asc')
+                .onSnapshot((querySnapshot) => {
+                    activeAds.innerHTML = '';
+                    
+                    if (querySnapshot.empty) {
+                        activeAds.innerHTML = '<div class="empty-state">No active ads</div>';
+                        return;
+                    }
+                    
+                    querySnapshot.forEach((doc) => {
+                        const ad = doc.data();
+                        const adDiv = document.createElement('div');
+                        adDiv.classList.add('user');
+                        adDiv.innerHTML = `
+                            <div class="user-info">
+                                <div class="user-name">${ad.title}</div>
+                                <div class="user-status">
+                                    <span>${ad.content}</span>
+                                    ${ad.imageUrl ? `<img src="${ad.imageUrl}" class="ad-image-preview" alt="${ad.title}">` : ''}
+                                </div>
+                            </div>
+                            <div class="user-actions">
+                                <button class="action-button delete-button" data-ad-id="${doc.id}">
+                                    Delete
+                                </button>
+                            </div>
+                        `;
+                        activeAds.appendChild(adDiv);
+                    });
+                    
+                    // Add event listeners to delete buttons
+                    document.querySelectorAll('.delete-button').forEach(button => {
+                        button.addEventListener('click', function() {
+                            const adId = this.getAttribute('data-ad-id');
+                            deleteAd(adId);
+                        });
+                    });
+                });
+        }
+
+        function saveAd() {
+            const title = document.getElementById('ad-title').value.trim();
+            const content = document.getElementById('ad-content').value.trim();
+            const imageUrl = document.getElementById('ad-image').value.trim();
+            const order = parseInt(document.getElementById('ad-order').value);
+            
+            if (!title || !content) {
+                alert('Please fill in title and content');
+                return;
+            }
+            
+            db.collection('ads').add({
+                title: title,
+                content: content,
+                imageUrl: imageUrl || '',
+                isActive: true,
+                order: order,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            }).then(() => {
+                alert('Ad saved successfully!');
+                // Clear form
+                document.getElementById('ad-title').value = '';
+                document.getElementById('ad-content').value = '';
+                document.getElementById('ad-image').value = '';
+                document.getElementById('ad-order').value = '1';
+            }).catch((error) => {
+                console.error('Error saving ad:', error);
+                alert('Error saving ad');
+            });
+        }
+
+        function deleteAd(adId) {
+            if (confirm('Are you sure you want to delete this ad?')) {
+                db.collection('ads').doc(adId).update({
+                    isActive: false
+                }).then(() => {
+                    alert('Ad deleted successfully');
+                loadAds();
+                loadDashboard();
+                }).catch((error) => {
+                console.error('Error deleting ad:', error);
+                alert('Error deleting ad');
+            });
+        }
+    }
+
+    // Settings Management
+    function loadSettings() {
+        db.collection('settings').doc('appSettings')
+            .get()
+            .then((doc) => {
+                if (doc.exists) {
+                    const settings = doc.data();
+                    document.getElementById('service-name').value = settings.serviceName || '';
+                    document.getElementById('service-description').value = settings.serviceDescription || '';
+                    document.getElementById('contact-image').value = settings.contactImage || '';
+                    document.getElementById('demo-video').value = settings.demoVideo || '';
+                }
+            })
+            .catch((error) => {
+                console.error('Error loading settings:', error);
+            });
+    }
+
+    function saveSettings() {
+        const serviceName = document.getElementById('service-name').value.trim();
+        const serviceDescription = document.getElementById('service-description').value.trim();
+        const contactImage = document.getElementById('contact-image').value.trim();
+        const demoVideo = document.getElementById('demo-video').value.trim();
+        
+        if (!serviceName) {
+            alert('Please enter service name');
+            return;
+        }
+        
+        db.collection('settings').doc('appSettings').set({
+            serviceName: serviceName,
+            serviceDescription: serviceDescription,
+            contactImage: contactImage,
+            demoVideo: demoVideo,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true })
+        .then(() => {
+            alert('Settings saved successfully!');
+            loadDashboard();
+        })
+        .catch((error) => {
+            console.error('Error saving settings:', error);
+            alert('Error saving settings');
+        });
+    }
+
+    function closeChat() {
+        chatModal.style.display = 'none';
+        currentChatUser = null;
+    }
+
+    // Auto-refresh dashboard every 30 seconds
+    setInterval(loadDashboard, 30000);
+
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', function() {
+        if (unsubscribeCallListener) {
+            unsubscribeCallListener();
+        }
+    });
+
+    </script>
+</body>
+</html>
